@@ -239,8 +239,8 @@
               }
             },
             "location": {
-              "latitude": "home_lat",
-              "longitude": "home_lon",
+              "latitude": "latitude",
+              "longitude": "longitude",
               "mode": "coords"
             },
             "name": "Selections",
@@ -266,6 +266,37 @@
         }
       ],
       "title": "Home Selections by City",
+      "transformations": [
+        {
+          "id": "convertFieldType",
+          "options": {
+            "conversions": [
+              {
+                "destinationType": "number",
+                "targetField": "home_lat"
+              },
+              {
+                "destinationType": "number",
+                "targetField": "home_lon"
+              }
+            ]
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "home_lat",
+            "renamePattern": "latitude"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "home_lon",
+            "renamePattern": "longitude"
+          }
+        }
+      ],
       "type": "geomap"
     },
     {
@@ -406,6 +437,25 @@
         }
       ],
       "title": "Home Price by City",
+      "transformations": [
+        {
+          "id": "groupBy",
+          "options": {
+            "fields": {
+              "Value": {
+                "aggregations": [
+                  "lastNotNull"
+                ],
+                "operation": "aggregate"
+              },
+              "home_city": {
+                "aggregations": [],
+                "operation": "groupby"
+              }
+            }
+          }
+        }
+      ],
       "type": "barchart"
     }
   ],
