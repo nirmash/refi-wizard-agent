@@ -16,6 +16,20 @@ AGENT_NAME = os.environ.get("AGENT_NAME", "refi-wizard")
 AGENT_VERSION = os.environ.get("AGENT_VERSION", "2")
 
 
+def _load_env_file():
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if os.path.exists(env_path):
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, _, value = line.partition("=")
+                    os.environ.setdefault(key.strip(), value.strip())
+
+
+_load_env_file()
+
+
 def _get_credential():
     api_key = os.environ.get("AZURE_AI_API_KEY")
     if api_key:
