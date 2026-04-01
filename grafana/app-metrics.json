@@ -114,44 +114,6 @@
     {
       "fieldConfig": {
         "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "thresholds": {
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 1
-              }
-            ]
-          }
-        }
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 18,
-        "y": 0
-      },
-      "id": 4,
-      "targets": [
-        {
-          "datasource": {
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "sum(app_errors_total) or vector(0)"
-        }
-      ],
-      "title": "Error Count",
-      "type": "stat"
-    },
-    {
-      "fieldConfig": {
-        "defaults": {
           "custom": {
             "fillOpacity": 15
           }
@@ -244,7 +206,8 @@
     },
     {
       "fieldConfig": {
-        "defaults": {}
+        "defaults": {},
+        "overrides": []
       },
       "gridPos": {
         "h": 10,
@@ -267,7 +230,7 @@
                 },
                 "size": {
                   "field": "Value",
-                  "max": 30,
+                  "max": 40,
                   "min": 5
                 },
                 "symbol": {
@@ -276,8 +239,11 @@
               }
             },
             "location": {
-              "mode": "auto"
+              "latitude": "home_lat",
+              "longitude": "home_lon",
+              "mode": "coords"
             },
+            "name": "Selections",
             "type": "markers"
           }
         ],
@@ -285,7 +251,7 @@
           "id": "coords",
           "lat": 37.5,
           "lon": -96,
-          "zoom": 4
+          "zoom": 3.5
         }
       },
       "targets": [
@@ -300,30 +266,6 @@
         }
       ],
       "title": "Home Selections by City",
-      "transformations": [
-        {
-          "id": "reduce",
-          "options": {
-            "reducers": [
-              "lastNotNull"
-            ]
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "home_lat",
-            "renamePattern": "latitude"
-          }
-        },
-        {
-          "id": "renameByRegex",
-          "options": {
-            "regex": "home_lon",
-            "renamePattern": "longitude"
-          }
-        }
-      ],
       "type": "geomap"
     },
     {
@@ -435,37 +377,6 @@
       ],
       "title": "Total Interactions",
       "type": "stat"
-    },
-    {
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "red",
-            "mode": "fixed"
-          },
-          "custom": {
-            "fillOpacity": 20
-          }
-        }
-      },
-      "gridPos": {
-        "h": 5,
-        "w": 12,
-        "x": 0,
-        "y": 21
-      },
-      "id": 12,
-      "targets": [
-        {
-          "datasource": {
-            "uid": "PBFA97CFB590B2093"
-          },
-          "expr": "rate(app_errors_total[5m])",
-          "legendFormat": "{{error_type}}: {{error_context}}"
-        }
-      ],
-      "title": "App Errors Over Time",
-      "type": "timeseries"
     },
     {
       "fieldConfig": {
