@@ -1,5 +1,8 @@
 import os
+import json
 import logging
+import msal
+from openai import OpenAI
 from flask import Flask, render_template, request, jsonify
 
 logging.basicConfig(level=logging.INFO)
@@ -14,37 +17,54 @@ ENDPOINT = os.environ.get(
 AGENT_NAME = os.environ.get("AGENT_NAME", "refi-wizard")
 AGENT_VERSION = os.environ.get("AGENT_VERSION", "2")
 
+_TENANT_ID = "72f988bf-86f1-41af-91ab-2d7cd011db47"
+_CLIENT_ID = "04b07795-8ddb-461a-bbee-02f9e1bf7b46"  # Azure CLI public client
+_SCOPES = ["https://ai.azure.com/.default"]
+_TOKEN_CACHE_PATH = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), ".token_cache.json"
+)
 
-def _load_env_file():
-    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
-    if os.path.exists(env_path):
-        with open(env_path) as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    key, _, value = line.partition("=")
-                    os.environ.setdefault(key.strip(), value.strip())
+_msal_cache = msal.SerializableTokenCache()
+if os.path.exists(_TOKEN_CACHE_PATH):
+    _msal_cache.deserialize(open(_TOKEN_CACHE_PATH).read())
+
+_msal_app = msal.PublicClientApplication(
+    _CLIENT_ID,
+    authority=f"https://login.microsoftonline.com/{_TENANT_ID}",
+    token_cache=_msal_cache,
+)
 
 
-_load_env_file()
+def _save_cache():
+    if _msal_cache.has_state_changed:
+        with open(_TOKEN_CACHE_PATH, "w") as f:
+            f.write(_msal_cache.serialize())
+
+
+def _get_token():
+    """Get a valid access token using cached refresh token from az CLI."""
+    accounts = _msal_app.get_accounts()
+    # Prefer microsoft.com account
+    msft = [a for a in accounts if "microsoft.com" in a.get("username", "")]
+    account = msft[0] if msft else (accounts[0] if accounts else None)
+    if account:
+        result = _msal_app.acquire_token_silent(_SCOPES, account=account, force_refresh=False)
+        if result and "access_token" in result:
+            _save_cache()
+            return result["access_token"]
+        logger.error("Token refresh failed: %s", result.get("error_description") if result else "no result")
+    raise RuntimeError(
+        "No cached credentials. Copy ~/.azure/msal_token_cache.json to .token_cache.json"
+    )
 
 
 def _get_openai_client():
-    from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
-    from azure.ai.projects import AIProjectClient
-
-    client_id = os.environ.get("AZURE_CLIENT_ID")
-    if client_id:
-        credential = ManagedIdentityCredential(client_id=client_id)
-    else:
-        credential = DefaultAzureCredential(
-            exclude_shared_token_cache_credential=True,
-            exclude_visual_studio_code_credential=True,
-            exclude_powershell_credential=True,
-            exclude_interactive_browser_credential=True,
-        )
-    project_client = AIProjectClient(endpoint=ENDPOINT, credential=credential)
-    return project_client.get_openai_client()
+    token = _get_token()
+    return OpenAI(
+        api_key=token,
+        base_url=ENDPOINT.rstrip("/") + "/openai/v1/",
+        default_headers={"User-Agent": "RefiWizard/1.0"},
+    )
 
 
 @app.route("/health")
