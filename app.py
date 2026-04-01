@@ -1,6 +1,7 @@
 import os
 import logging
 import json
+import time
 from openai import OpenAI
 from flask import Flask, render_template, request, jsonify
 
@@ -22,6 +23,67 @@ def _load_env_file():
 _load_env_file()
 
 app = Flask(__name__)
+
+# ── OpenTelemetry ────────────────────────────────────────────────────────────
+
+OTEL_ENDPOINT = os.environ.get(
+    "OTEL_EXPORTER_OTLP_ENDPOINT", "https://production-otlp-2fa05823.app.embr.azure"
+)
+
+_tracer = None
+_meter = None
+_chat_counter = None
+_chat_latency = None
+_home_select_counter = None
+
+try:
+    from opentelemetry import trace, metrics
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+    from opentelemetry.sdk.metrics import MeterProvider
+    from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+    from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+    from opentelemetry.instrumentation.flask import FlaskInstrumentor
+    from opentelemetry.instrumentation.requests import RequestsInstrumentor
+
+    _otel_available = True
+except ImportError:
+    _otel_available = False
+
+if _otel_available and OTEL_ENDPOINT:
+    try:
+        resource = Resource.create({"service.name": "home-finder", "service.version": "1.0.0"})
+
+        # Traces
+        trace_provider = TracerProvider(resource=resource)
+        trace_provider.add_span_processor(
+            BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{OTEL_ENDPOINT}/v1/traces"))
+        )
+        trace.set_tracer_provider(trace_provider)
+        _tracer = trace.get_tracer("home-finder")
+
+        # Metrics
+        metric_reader = PeriodicExportingMetricReader(
+            OTLPMetricExporter(endpoint=f"{OTEL_ENDPOINT}/v1/metrics"),
+            export_interval_millis=15000,
+        )
+        metric_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
+        metrics.set_meter_provider(metric_provider)
+        _meter = metrics.get_meter("home-finder")
+
+        _chat_counter = _meter.create_counter("chat.requests", description="Number of chat requests")
+        _chat_latency = _meter.create_histogram("chat.latency_ms", description="Chat response latency in ms")
+        _home_select_counter = _meter.create_counter("home.selections", description="Number of home selections")
+
+        # Auto-instrument Flask and outbound HTTP
+        FlaskInstrumentor.instrument_app(app)
+        RequestsInstrumentor().instrument()
+
+        logger.info("OpenTelemetry initialized → %s", OTEL_ENDPOINT)
+    except Exception as exc:
+        logger.warning("OpenTelemetry setup failed (continuing without): %s", exc)
 
 ENDPOINT = os.environ.get(
     "AZURE_AI_ENDPOINT",
@@ -156,11 +218,17 @@ def index():
 
 @app.route("/api/homes")
 def api_homes():
+    if _tracer:
+        with _tracer.start_as_current_span("fetch_homes") as span:
+            homes = _fetch_homes()
+            span.set_attribute("homes.count", len(homes))
+            return jsonify(homes)
     return jsonify(_fetch_homes())
 
 
 @app.route("/chat", methods=["POST"])
 def chat():
+    start = time.time()
     data = request.get_json()
     user_message = data.get("message", "").strip()
     home_id = data.get("home_id")
@@ -168,10 +236,13 @@ def chat():
         return jsonify({"error": "Message is required"}), 400
 
     messages = []
+    home = None
 
     if home_id:
         home = _fetch_home(home_id)
         if home:
+            if _home_select_counter:
+                _home_select_counter.add(1, {"home.city": home["city"], "home.state": home["state"]})
             context = (
                 f"[Context: The user is looking at this property: {home['address']}, {home['city']} {home['state']} — "
                 f"${home['price']:,}, {home['bedrooms']} bed/{home['bathrooms']} bath, {home['sqft']:,} sqft. "
@@ -181,7 +252,18 @@ def chat():
 
     messages.append({"role": "user", "content": user_message})
 
+    span_ctx = _tracer.start_as_current_span("agent_chat") if _tracer else None
     try:
+        if span_ctx:
+            span_ctx.__enter__()
+            span = trace.get_current_span()
+            span.set_attribute("agent.name", AGENT_NAME)
+            span.set_attribute("agent.version", AGENT_VERSION)
+            if home:
+                span.set_attribute("home.id", home["id"])
+                span.set_attribute("home.price", home["price"])
+                span.set_attribute("home.city", home["city"])
+
         openai_client = _get_openai_client()
         response = openai_client.responses.create(
             input=messages,
@@ -193,10 +275,26 @@ def chat():
                 }
             },
         )
+
+        if _chat_counter:
+            _chat_counter.add(1, {"status": "success"})
+        latency_ms = (time.time() - start) * 1000
+        if _chat_latency:
+            _chat_latency.record(latency_ms)
+        if span_ctx:
+            span = trace.get_current_span()
+            span.set_attribute("chat.latency_ms", latency_ms)
+            span.set_attribute("chat.response_length", len(response.output_text))
+
         return jsonify({"response": response.output_text})
     except Exception as exc:
+        if _chat_counter:
+            _chat_counter.add(1, {"status": "error"})
         logger.exception("Chat request failed")
         return jsonify({"error": str(exc)}), 500
+    finally:
+        if span_ctx:
+            span_ctx.__exit__(None, None, None)
 
 
 if __name__ == "__main__":
