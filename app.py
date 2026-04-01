@@ -1,7 +1,6 @@
 import os
 import logging
 from flask import Flask, render_template, request, jsonify
-from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
 from azure.ai.projects import AIProjectClient
 
 logging.basicConfig(level=logging.INFO)
@@ -18,10 +17,17 @@ AGENT_VERSION = os.environ.get("AGENT_VERSION", "2")
 
 
 def _get_credential():
+    api_key = os.environ.get("AZURE_AI_API_KEY")
+    if api_key:
+        from azure.core.credentials import AzureKeyCredential
+        return AzureKeyCredential(api_key)
+
+    from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
     client_id = os.environ.get("AZURE_CLIENT_ID")
     if client_id:
         return ManagedIdentityCredential(client_id=client_id)
     return DefaultAzureCredential(
+        exclude_managed_identity_credential=True,
         exclude_shared_token_cache_credential=True,
         exclude_visual_studio_code_credential=True,
         exclude_powershell_credential=True,
