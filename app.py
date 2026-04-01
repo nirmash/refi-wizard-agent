@@ -64,10 +64,13 @@ if _otel_available and OTEL_ENDPOINT:
     try:
         resource = Resource.create({"service.name": "home-finder", "service.version": "1.0.0"})
 
-        # Traces → Tempo
+        # Traces → Tempo (force endpoint, clear env vars that would override it)
+        os.environ.pop("OTEL_EXPORTER_OTLP_ENDPOINT", None)
+        os.environ.pop("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", None)
+        _tempo_traces_url = f"{TEMPO_ENDPOINT}/v1/traces"
         trace_provider = TracerProvider(resource=resource)
         trace_provider.add_span_processor(
-            BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{TEMPO_ENDPOINT}/v1/traces"))
+            BatchSpanProcessor(OTLPSpanExporter(endpoint=_tempo_traces_url))
         )
         trace.set_tracer_provider(trace_provider)
         _tracer = trace.get_tracer("home-finder")
@@ -93,7 +96,7 @@ if _otel_available and OTEL_ENDPOINT:
         FlaskInstrumentor.instrument_app(app)
         RequestsInstrumentor().instrument()
 
-        logger.info("OpenTelemetry initialized → %s", OTEL_ENDPOINT)
+        logger.info("OpenTelemetry initialized → traces: %s, metrics: %s", _tempo_traces_url, PROM_METRICS_ENDPOINT)
     except Exception as exc:
         logger.warning("OpenTelemetry setup failed (continuing without): %s", exc)
 
