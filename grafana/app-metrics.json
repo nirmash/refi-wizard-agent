@@ -1,17 +1,6 @@
 {
-  "annotations": {
-    "list": []
-  },
-  "editable": true,
-  "fiscalYearStartMonth": 0,
-  "graphTooltip": 1,
-  "links": [],
   "panels": [
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -22,44 +11,30 @@
               {
                 "color": "blue",
                 "value": null
-              },
-              {
-                "color": "green",
-                "value": 10
-              },
-              {
-                "color": "yellow",
-                "value": 100
               }
             ]
           }
         }
       },
       "gridPos": {
-        "h": 6,
+        "h": 4,
         "w": 6,
         "x": 0,
         "y": 0
       },
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "textMode": "auto"
-      },
+      "id": 1,
       "targets": [
         {
-          "expr": "sum(chat_requests_total)",
-          "legendFormat": "Total"
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "sum(chat_requests_total)"
         }
       ],
       "title": "Chat Requests (Total)",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -68,42 +43,32 @@
           "thresholds": {
             "steps": [
               {
-                "color": "purple",
-                "value": null
-              },
-              {
                 "color": "green",
-                "value": 5
+                "value": null
               }
             ]
           }
         }
       },
       "gridPos": {
-        "h": 6,
+        "h": 4,
         "w": 6,
         "x": 6,
         "y": 0
       },
-      "options": {
-        "colorMode": "background",
-        "graphMode": "area",
-        "textMode": "auto"
-      },
+      "id": 2,
       "targets": [
         {
-          "expr": "sum(home_selections_total)",
-          "legendFormat": "Total"
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "sum(home_selections_total)"
         }
       ],
       "title": "Home Selections (Total)",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -117,11 +82,11 @@
               },
               {
                 "color": "yellow",
-                "value": 2000
+                "value": 5000
               },
               {
                 "color": "red",
-                "value": 5000
+                "value": 15000
               }
             ]
           },
@@ -129,46 +94,73 @@
         }
       },
       "gridPos": {
-        "h": 6,
+        "h": 4,
         "w": 6,
         "x": 12,
-        "y": 6
+        "y": 0
       },
-      "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "textMode": "auto"
-      },
+      "id": 3,
       "targets": [
         {
-          "expr": "chat_latency_ms_sum / chat_latency_ms_count",
-          "legendFormat": "avg"
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "chat_latency_ms_sum / chat_latency_ms_count"
         }
       ],
       "title": "Avg Chat Latency",
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        }
       },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 0
+      },
+      "id": 4,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "sum(app_errors_total) or vector(0)"
+        }
+      ],
+      "title": "Error Count",
+      "type": "stat"
+    },
+    {
       "fieldConfig": {
         "defaults": {
           "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "lineInterpolation": "smooth",
-            "pointSize": 5,
-            "showPoints": "auto"
-          },
-          "unit": "reqps"
+            "fillOpacity": 15
+          }
         },
         "overrides": [
           {
             "matcher": {
               "id": "byName",
-              "options": "Error"
+              "options": "error"
             },
             "properties": [
               {
@@ -183,57 +175,66 @@
         ]
       },
       "gridPos": {
-        "h": 8,
+        "h": 7,
         "w": 12,
         "x": 0,
-        "y": 6
+        "y": 4
       },
+      "id": 5,
       "targets": [
         {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
           "expr": "rate(chat_requests_total{status=\"success\"}[5m])",
-          "legendFormat": "Success"
+          "legendFormat": "success"
         },
         {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
           "expr": "rate(chat_requests_total{status=\"error\"}[5m])",
-          "legendFormat": "Error"
+          "legendFormat": "error"
         }
       ],
       "title": "Chat Requests Over Time (success vs error)",
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
-      },
       "fieldConfig": {
         "defaults": {
           "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineInterpolation": "smooth",
-            "pointSize": 5,
-            "showPoints": "auto"
+            "fillOpacity": 10
           },
           "unit": "ms"
         }
       },
       "gridPos": {
-        "h": 8,
+        "h": 7,
         "w": 12,
         "x": 12,
-        "y": 14
+        "y": 4
       },
+      "id": 6,
       "targets": [
         {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
           "expr": "histogram_quantile(0.50, rate(chat_latency_ms_bucket[5m]))",
           "legendFormat": "p50"
         },
         {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
           "expr": "histogram_quantile(0.95, rate(chat_latency_ms_bucket[5m]))",
           "legendFormat": "p95"
         },
         {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
           "expr": "histogram_quantile(0.99, rate(chat_latency_ms_bucket[5m]))",
           "legendFormat": "p99"
         }
@@ -242,76 +243,271 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "PBFA97CFB590B2093"
+      "fieldConfig": {
+        "defaults": {}
       },
+      "gridPos": {
+        "h": 10,
+        "w": 12,
+        "x": 0,
+        "y": 11
+      },
+      "id": 7,
+      "options": {
+        "basemap": {
+          "type": "default"
+        },
+        "layers": [
+          {
+            "config": {
+              "showLegend": true,
+              "style": {
+                "color": {
+                  "fixed": "#4361ee"
+                },
+                "size": {
+                  "field": "Value",
+                  "max": 30,
+                  "min": 5
+                },
+                "symbol": {
+                  "fixed": "img/icons/marker/circle.svg"
+                }
+              }
+            },
+            "location": {
+              "mode": "auto"
+            },
+            "type": "markers"
+          }
+        ],
+        "view": {
+          "id": "coords",
+          "lat": 37.5,
+          "lon": -96,
+          "zoom": 4
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "home_selections_total",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{home_city}}"
+        }
+      ],
+      "title": "Home Selections by City",
+      "transformations": [
+        {
+          "id": "reduce",
+          "options": {
+            "reducers": [
+              "lastNotNull"
+            ]
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "home_lat",
+            "renamePattern": "latitude"
+          }
+        },
+        {
+          "id": "renameByRegex",
+          "options": {
+            "regex": "home_lon",
+            "renamePattern": "longitude"
+          }
+        }
+      ],
+      "type": "geomap"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 15
+          }
+        }
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 12,
+        "y": 11
+      },
+      "id": 8,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "rate(chat_interactions_total[5m])",
+          "legendFormat": "home {{home_id}}"
+        }
+      ],
+      "title": "Chat Interactions per Home",
+      "type": "timeseries"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0,
+          "unit": "currencyUSD"
+        }
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 12,
+        "y": 16
+      },
+      "id": 9,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "home_price_sum / home_price_count"
+        }
+      ],
+      "title": "Avg Home Price (Selected)",
+      "type": "stat"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 1
+        }
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 16,
+        "y": 16
+      },
+      "id": 10,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "home_bedrooms_sum / home_bedrooms_count"
+        }
+      ],
+      "title": "Avg Bedrooms (Selected)",
+      "type": "stat"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "steps": [
+              {
+                "color": "purple",
+                "value": null
+              }
+            ]
+          }
+        }
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 4,
+        "x": 20,
+        "y": 16
+      },
+      "id": 11,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "sum(chat_interactions_total)"
+        }
+      ],
+      "title": "Total Interactions",
+      "type": "stat"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "red",
+            "mode": "fixed"
+          },
+          "custom": {
+            "fillOpacity": 20
+          }
+        }
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 12,
+        "x": 0,
+        "y": 21
+      },
+      "id": 12,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "rate(app_errors_total[5m])",
+          "legendFormat": "{{error_type}}: {{error_context}}"
+        }
+      ],
+      "title": "App Errors Over Time",
+      "type": "timeseries"
+    },
+    {
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "palette-classic"
           },
-          "custom": {
-            "drawStyle": "bars",
-            "fillOpacity": 50,
-            "stacking": {
-              "mode": "normal"
-            }
-          },
-          "unit": "ops"
+          "unit": "currencyUSD"
         }
       },
       "gridPos": {
-        "h": 8,
+        "h": 5,
         "w": 12,
-        "x": 0,
-        "y": 14
+        "x": 12,
+        "y": 21
       },
+      "id": 13,
       "targets": [
         {
-          "expr": "rate(home_selections_total[5m])",
-          "legendFormat": "{{home_city}}, {{home_state}}"
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "home_price_sum / home_price_count",
+          "format": "table",
+          "instant": true,
+          "legendFormat": "{{home_city}}"
         }
       ],
-      "title": "Home Selections by City",
-      "type": "timeseries"
+      "title": "Home Price by City",
+      "type": "barchart"
     }
   ],
-  "schemaVersion": 39,
+  "refresh": "30s",
   "tags": [
     "app",
     "ai-agent",
     "home-finder"
   ],
-  "templating": {
-    "list": [
-      {
-        "current": {
-          "selected": false,
-          "text": "refi-wizard-agent",
-          "value": "refi-wizard-agent"
-        },
-        "datasource": {
-          "type": "prometheus",
-          "uid": "PBFA97CFB590B2093"
-        },
-        "definition": "label_values(http_server_active_requests, service_name)",
-        "includeAll": false,
-        "multi": false,
-        "name": "service",
-        "query": "label_values(http_server_active_requests, service_name)",
-        "refresh": 2,
-        "regex": "",
-        "sort": 1,
-        "type": "query"
-      }
-    ]
-  },
   "time": {
     "from": "now-1h",
     "to": "now"
   },
-  "timepicker": {},
   "timezone": "browser",
   "title": "Home Finder \u2014 App Metrics",
   "uid": "refi-wizard-agent"

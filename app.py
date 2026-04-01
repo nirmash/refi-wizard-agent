@@ -2,6 +2,7 @@ import os
 import logging
 import json
 import time
+import traceback
 from openai import OpenAI
 from flask import Flask, render_template, request, jsonify
 
@@ -35,6 +36,10 @@ _meter = None
 _chat_counter = None
 _chat_latency = None
 _home_select_counter = None
+_home_price_hist = None
+_home_bedrooms_hist = None
+_chat_interactions = None
+_app_errors = None
 
 try:
     from opentelemetry import trace, metrics
@@ -54,7 +59,7 @@ except ImportError:
 
 if _otel_available and OTEL_ENDPOINT:
     try:
-        resource = Resource.create({"service.name": "refi-wizard-agent", "service.version": "1.0.0"})
+        resource = Resource.create({"service.name": "home-finder", "service.version": "1.0.0"})
 
         # Traces
         trace_provider = TracerProvider(resource=resource)
@@ -62,7 +67,7 @@ if _otel_available and OTEL_ENDPOINT:
             BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{OTEL_ENDPOINT}/v1/traces"))
         )
         trace.set_tracer_provider(trace_provider)
-        _tracer = trace.get_tracer("refi-wizard-agent")
+        _tracer = trace.get_tracer("home-finder")
 
         # Metrics → Prometheus via OTLP
         metric_reader = PeriodicExportingMetricReader(
@@ -71,11 +76,15 @@ if _otel_available and OTEL_ENDPOINT:
         )
         metric_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
         metrics.set_meter_provider(metric_provider)
-        _meter = metrics.get_meter("refi-wizard-agent")
+        _meter = metrics.get_meter("home-finder")
 
         _chat_counter = _meter.create_counter("chat.requests", description="Number of chat requests")
         _chat_latency = _meter.create_histogram("chat.latency_ms", description="Chat response latency in ms")
         _home_select_counter = _meter.create_counter("home.selections", description="Number of home selections")
+        _home_price_hist = _meter.create_histogram("home.price", description="Price of selected homes in dollars")
+        _home_bedrooms_hist = _meter.create_histogram("home.bedrooms", description="Bedrooms in selected homes")
+        _chat_interactions = _meter.create_counter("chat.interactions", description="User-agent message exchanges")
+        _app_errors = _meter.create_counter("app.errors", description="Application errors")
 
         # Auto-instrument Flask and outbound HTTP
         FlaskInstrumentor.instrument_app(app)
@@ -93,6 +102,18 @@ API_KEY = os.environ.get("AZURE_AI_API_KEY", "EgsUnoGDlo559BTgvPPTq1fLdzmaR7O5A1
 AGENT_NAME = os.environ.get("AGENT_NAME", "refi-wizard")
 AGENT_VERSION = os.environ.get("AGENT_VERSION", "5")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+
+# City coordinates for geomap
+CITY_COORDS = {
+    "Austin": (30.2672, -97.7431),
+    "Denver": (39.7392, -104.9903),
+    "Raleigh": (35.7796, -78.6382),
+    "Phoenix": (33.4484, -112.0740),
+    "Charleston": (32.7765, -79.9311),
+    "Portland": (45.5152, -122.6784),
+    "Nashville": (36.1627, -86.7816),
+    "Tampa": (27.9506, -82.4572),
+}
 
 # ── Database ─────────────────────────────────────────────────────────────────
 
@@ -194,6 +215,19 @@ def _fetch_home(home_id):
     return dict(zip(cols, row)) if row else None
 
 
+def _record_error(exc, context=""):
+    """Record an error in OTEL: span exception, error counter, and log."""
+    if _app_errors:
+        _app_errors.add(1, {"error.type": type(exc).__name__, "error.context": context})
+    if _tracer:
+        span = trace.get_current_span()
+        if span and span.is_recording():
+            span.record_exception(exc)
+            span.set_attribute("error", True)
+            span.set_attribute("error.message", str(exc))
+            span.set_attribute("error.stacktrace", traceback.format_exc())
+
+
 # ── OpenAI ───────────────────────────────────────────────────────────────────
 
 def _get_openai_client():
@@ -219,12 +253,17 @@ def index():
 
 @app.route("/api/homes")
 def api_homes():
-    if _tracer:
-        with _tracer.start_as_current_span("fetch_homes") as span:
-            homes = _fetch_homes()
-            span.set_attribute("homes.count", len(homes))
-            return jsonify(homes)
-    return jsonify(_fetch_homes())
+    try:
+        if _tracer:
+            with _tracer.start_as_current_span("fetch_homes") as span:
+                homes = _fetch_homes()
+                span.set_attribute("homes.count", len(homes))
+                return jsonify(homes)
+        return jsonify(_fetch_homes())
+    except Exception as exc:
+        _record_error(exc, "api_homes")
+        logger.exception("Failed to fetch homes")
+        return jsonify({"error": str(exc)}), 500
 
 
 @app.route("/chat", methods=["POST"])
@@ -240,8 +279,18 @@ def chat():
     if home_id:
         home = _fetch_home(home_id)
         if home:
+            # Business metrics: selections with geo, price, bedrooms
+            lat, lon = CITY_COORDS.get(home["city"], (0, 0))
             if _home_select_counter:
-                _home_select_counter.add(1, {"home.city": home["city"], "home.state": home["state"]})
+                _home_select_counter.add(1, {
+                    "home.city": home["city"], "home.state": home["state"],
+                    "home.lat": str(lat), "home.lon": str(lon),
+                })
+            if _home_price_hist:
+                _home_price_hist.record(home["price"], {"home.city": home["city"]})
+            if _home_bedrooms_hist:
+                _home_bedrooms_hist.record(home["bedrooms"], {"home.city": home["city"]})
+
             context = (
                 f"[Context: The user is looking at this property: {home['address']}, {home['city']} {home['state']} — "
                 f"${home['price']:,}, {home['bedrooms']} bed/{home['bathrooms']} bath, {home['sqft']:,} sqft. "
@@ -250,6 +299,10 @@ def chat():
             user_message = context + user_message
 
     messages = [{"role": "user", "content": user_message}]
+
+    # Track interactions
+    if _chat_interactions:
+        _chat_interactions.add(1, {"home.id": str(home_id or "none")})
 
     def _do_chat():
         openai_client = _get_openai_client()
@@ -290,8 +343,17 @@ def chat():
     except Exception as exc:
         if _chat_counter:
             _chat_counter.add(1, {"status": "error"})
+        _record_error(exc, "agent_chat")
         logger.exception("Chat request failed")
         return jsonify({"error": str(exc)}), 500
+
+
+@app.errorhandler(Exception)
+def handle_exception(exc):
+    """Global error handler — records all unhandled exceptions in OTEL."""
+    _record_error(exc, "unhandled")
+    logger.exception("Unhandled exception")
+    return jsonify({"error": "Internal server error"}), 500
 
 
 if __name__ == "__main__":
