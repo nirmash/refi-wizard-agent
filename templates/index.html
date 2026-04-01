@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Home Finder</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; height: 100vh; display: flex; flex-direction: column; }
@@ -33,6 +34,18 @@
     .message { max-width: 100%; padding: 12px 16px; border-radius: 12px; line-height: 1.5; font-size: 0.9rem; white-space: pre-wrap; word-wrap: break-word; }
     .message.user { background: #4361ee; color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; max-width: 85%; }
     .message.bot { background: #fff; color: #333; align-self: flex-start; border-bottom-left-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); max-width: 90%; }
+    .message.bot h1, .message.bot h2, .message.bot h3 { margin: 8px 0 4px; font-size: 1em; }
+    .message.bot h2 { font-size: 0.95em; }
+    .message.bot h3 { font-size: 0.9em; }
+    .message.bot p { margin: 4px 0; }
+    .message.bot ul, .message.bot ol { margin: 4px 0 4px 18px; }
+    .message.bot li { margin: 2px 0; }
+    .message.bot strong { color: #1a1a2e; }
+    .message.bot code { background: #f0f0f0; padding: 1px 4px; border-radius: 3px; font-size: 0.85em; }
+    .message.bot pre { background: #f0f0f0; padding: 8px; border-radius: 6px; overflow-x: auto; margin: 6px 0; }
+    .message.bot table { border-collapse: collapse; margin: 6px 0; width: 100%; font-size: 0.85em; }
+    .message.bot th, .message.bot td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; }
+    .message.bot th { background: #f5f5f5; }
     .message.error { background: #fee; color: #c00; }
     .message.system { background: transparent; color: #999; text-align: center; align-self: center; font-style: italic; font-size: 0.85rem; }
     .typing { opacity: 0.6; font-style: italic; }
@@ -131,7 +144,11 @@
     function addMessage(text, cls) {
       const div = document.createElement('div');
       div.className = 'message ' + cls;
-      div.textContent = text;
+      if (cls === 'bot' && typeof marked !== 'undefined') {
+        div.innerHTML = marked.parse(text);
+      } else {
+        div.textContent = text;
+      }
       chat.appendChild(div);
       chat.scrollTop = chat.scrollHeight;
       return div;

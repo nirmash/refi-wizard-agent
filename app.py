@@ -97,14 +97,14 @@ DATABASE_URL = os.environ.get("DATABASE_URL", "")
 # ── Database ─────────────────────────────────────────────────────────────────
 
 SAMPLE_HOMES = [
-    {"address": "742 Evergreen Terrace", "city": "Austin", "state": "TX", "price": 425000, "bedrooms": 3, "bathrooms": 2.0, "sqft": 1850, "description": "Charming single-story home with updated kitchen, hardwood floors, and a spacious backyard with mature trees."},
-    {"address": "1200 Lakeview Dr", "city": "Denver", "state": "CO", "price": 310000, "bedrooms": 2, "bathrooms": 1.0, "sqft": 1200, "description": "Cozy mountain-view condo near downtown with open floor plan and in-unit laundry."},
-    {"address": "88 Willow Creek Rd", "city": "Raleigh", "state": "NC", "price": 550000, "bedrooms": 4, "bathrooms": 3.0, "sqft": 2600, "description": "Spacious colonial with a two-car garage, finished basement, and large deck overlooking a wooded lot."},
-    {"address": "455 Sunset Blvd", "city": "Phoenix", "state": "AZ", "price": 289000, "bedrooms": 2, "bathrooms": 2.0, "sqft": 1100, "description": "Modern desert retreat with solar panels, quartz countertops, and a community pool."},
-    {"address": "33 Harbor Walk", "city": "Charleston", "state": "SC", "price": 675000, "bedrooms": 4, "bathrooms": 2.5, "sqft": 2200, "description": "Historic district gem with wraparound porch, exposed brick, and walking distance to waterfront."},
-    {"address": "910 Pine Ridge Ct", "city": "Portland", "state": "OR", "price": 485000, "bedrooms": 3, "bathrooms": 2.0, "sqft": 1750, "description": "Craftsman bungalow with original built-ins, updated bathrooms, and a rain garden."},
-    {"address": "2750 Prairie View Ln", "city": "Nashville", "state": "TN", "price": 365000, "bedrooms": 3, "bathrooms": 2.5, "sqft": 1900, "description": "New construction in growing neighborhood with open concept, smart home features, and energy-efficient appliances."},
-    {"address": "18 Coral Bay Cir", "city": "Tampa", "state": "FL", "price": 520000, "bedrooms": 4, "bathrooms": 3.0, "sqft": 2400, "description": "Waterfront property with private dock, screened lanai, and a resort-style pool."},
+    {"address": "742 Evergreen Terrace", "city": "Austin", "state": "TX", "price": 425000, "bedrooms": 3, "bathrooms": 2.0, "sqft": 1850, "description": "Charming single-story home with updated kitchen, hardwood floors, and a spacious backyard with mature trees.", "image_url": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=400&h=260&fit=crop"},
+    {"address": "1200 Lakeview Dr", "city": "Denver", "state": "CO", "price": 310000, "bedrooms": 2, "bathrooms": 1.0, "sqft": 1200, "description": "Cozy mountain-view condo near downtown with open floor plan and in-unit laundry.", "image_url": "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=260&fit=crop"},
+    {"address": "88 Willow Creek Rd", "city": "Raleigh", "state": "NC", "price": 550000, "bedrooms": 4, "bathrooms": 3.0, "sqft": 2600, "description": "Spacious colonial with a two-car garage, finished basement, and large deck overlooking a wooded lot.", "image_url": "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&h=260&fit=crop"},
+    {"address": "455 Sunset Blvd", "city": "Phoenix", "state": "AZ", "price": 289000, "bedrooms": 2, "bathrooms": 2.0, "sqft": 1100, "description": "Modern desert retreat with solar panels, quartz countertops, and a community pool.", "image_url": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400&h=260&fit=crop"},
+    {"address": "33 Harbor Walk", "city": "Charleston", "state": "SC", "price": 675000, "bedrooms": 4, "bathrooms": 2.5, "sqft": 2200, "description": "Historic district gem with wraparound porch, exposed brick, and walking distance to waterfront.", "image_url": "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=400&h=260&fit=crop"},
+    {"address": "910 Pine Ridge Ct", "city": "Portland", "state": "OR", "price": 485000, "bedrooms": 3, "bathrooms": 2.0, "sqft": 1750, "description": "Craftsman bungalow with original built-ins, updated bathrooms, and a rain garden.", "image_url": "https://images.unsplash.com/photo-1605276374104-dee2a0ed3cd6?w=400&h=260&fit=crop"},
+    {"address": "2750 Prairie View Ln", "city": "Nashville", "state": "TN", "price": 365000, "bedrooms": 3, "bathrooms": 2.5, "sqft": 1900, "description": "New construction in growing neighborhood with open concept, smart home features, and energy-efficient appliances.", "image_url": "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=400&h=260&fit=crop"},
+    {"address": "18 Coral Bay Cir", "city": "Tampa", "state": "FL", "price": 520000, "bedrooms": 4, "bathrooms": 3.0, "sqft": 2400, "description": "Waterfront property with private dock, screened lanai, and a resort-style pool.", "image_url": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=400&h=260&fit=crop"},
 ]
 
 
@@ -142,7 +142,7 @@ def _init_db():
                 cur.execute(
                     "INSERT INTO homes (address, city, state, price, bedrooms, bathrooms, sqft, image_url, description) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
                     (h["address"], h["city"], h["state"], h["price"], h["bedrooms"], h["bathrooms"], h["sqft"],
-                     f"https://picsum.photos/seed/house{i+1}/400/260", h["description"]),
+                     h["image_url"], h["description"]),
                 )
     else:
         cur.execute("""
@@ -160,7 +160,7 @@ def _init_db():
                 cur.execute(
                     "INSERT INTO homes (address, city, state, price, bedrooms, bathrooms, sqft, image_url, description) VALUES (?,?,?,?,?,?,?,?,?)",
                     (h["address"], h["city"], h["state"], h["price"], h["bedrooms"], h["bathrooms"], h["sqft"],
-                     f"https://picsum.photos/seed/house{i+1}/400/260", h["description"]),
+                     h["image_url"], h["description"]),
                 )
     conn.commit()
     cur.close()
