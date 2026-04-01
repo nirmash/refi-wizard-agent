@@ -1,7 +1,11 @@
 import os
+import logging
 from flask import Flask, render_template, request, jsonify
 from azure.identity import DefaultAzureCredential, ManagedIdentityCredential
 from azure.ai.projects import AIProjectClient
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
@@ -17,7 +21,12 @@ def _get_credential():
     client_id = os.environ.get("AZURE_CLIENT_ID")
     if client_id:
         return ManagedIdentityCredential(client_id=client_id)
-    return DefaultAzureCredential()
+    return DefaultAzureCredential(
+        exclude_shared_token_cache_credential=True,
+        exclude_visual_studio_code_credential=True,
+        exclude_powershell_credential=True,
+        exclude_interactive_browser_credential=True,
+    )
 
 
 def _get_openai_client():
@@ -26,6 +35,11 @@ def _get_openai_client():
         credential=_get_credential(),
     )
     return project_client.get_openai_client()
+
+
+@app.route("/health")
+def health():
+    return jsonify({"status": "ok"})
 
 
 @app.route("/")
@@ -54,6 +68,7 @@ def chat():
         )
         return jsonify({"response": response.output_text})
     except Exception as exc:
+        logger.exception("Chat request failed")
         return jsonify({"error": str(exc)}), 500
 
 
