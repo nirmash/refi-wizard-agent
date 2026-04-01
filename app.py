@@ -2,6 +2,7 @@ import os
 import logging
 import json
 import time
+import random
 import traceback
 from openai import OpenAI
 from flask import Flask, render_template, request, jsonify
@@ -102,6 +103,40 @@ API_KEY = os.environ.get("AZURE_AI_API_KEY", "EgsUnoGDlo559BTgvPPTq1fLdzmaR7O5A1
 AGENT_NAME = os.environ.get("AGENT_NAME", "refi-wizard")
 AGENT_VERSION = os.environ.get("AGENT_VERSION", "5")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
+ERROR_RATE = float(os.environ.get("SYNTHETIC_ERROR_RATE", "0.15"))  # ~15% of requests
+
+
+# ── Synthetic Errors ─────────────────────────────────────────────────────────
+
+class DatabaseConnectionError(Exception):
+    """Simulated database connection failure."""
+    pass
+
+class AgentTimeoutError(Exception):
+    """Simulated agent response timeout."""
+    pass
+
+class RateLimitExceededError(Exception):
+    """Simulated API rate limit exceeded."""
+    pass
+
+class InvalidHomeDataError(Exception):
+    """Simulated corrupt home listing data."""
+    pass
+
+_SYNTHETIC_ERRORS = [
+    (DatabaseConnectionError, "Connection to PostgreSQL refused: host=db.internal port=5432 - timeout after 5000ms"),
+    (AgentTimeoutError, "Agent 'refi-wizard' did not respond within 30s deadline. upstream_latency=30.2s, retries=2"),
+    (RateLimitExceededError, "Azure OpenAI rate limit exceeded: 429 Too Many Requests. retry_after=12s, tokens_used=48201/50000"),
+    (InvalidHomeDataError, "Home listing id=42 has invalid data: price=None, sqft=-1. Validation failed at models.Home.validate()"),
+]
+
+
+def _maybe_inject_error():
+    """Randomly raise a synthetic error to test error telemetry."""
+    if random.random() < ERROR_RATE:
+        err_cls, msg = random.choice(_SYNTHETIC_ERRORS)
+        raise err_cls(msg)
 
 # City coordinates for geomap
 CITY_COORDS = {
@@ -305,6 +340,7 @@ def chat():
         _chat_interactions.add(1, {"home.id": str(home_id or "none")})
 
     def _do_chat():
+        _maybe_inject_error()
         openai_client = _get_openai_client()
         return openai_client.responses.create(
             input=messages,
