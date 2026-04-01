@@ -24,31 +24,39 @@ _TOKEN_CACHE_PATH = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), ".token_cache.json"
 )
 
-_msal_cache = msal.SerializableTokenCache()
-if os.path.exists(_TOKEN_CACHE_PATH):
-    _msal_cache.deserialize(open(_TOKEN_CACHE_PATH).read())
+_msal_app = None
 
-_msal_app = msal.PublicClientApplication(
-    _CLIENT_ID,
-    authority=f"https://login.microsoftonline.com/{_TENANT_ID}",
-    token_cache=_msal_cache,
-)
+
+def _get_msal_app():
+    global _msal_app
+    if _msal_app is None:
+        cache = msal.SerializableTokenCache()
+        if os.path.exists(_TOKEN_CACHE_PATH):
+            cache.deserialize(open(_TOKEN_CACHE_PATH).read())
+        _msal_app = msal.PublicClientApplication(
+            _CLIENT_ID,
+            authority=f"https://login.microsoftonline.com/{_TENANT_ID}",
+            token_cache=cache,
+        )
+    return _msal_app
 
 
 def _save_cache():
-    if _msal_cache.has_state_changed:
+    app = _get_msal_app()
+    cache = app.token_cache
+    if hasattr(cache, "has_state_changed") and cache.has_state_changed:
         with open(_TOKEN_CACHE_PATH, "w") as f:
-            f.write(_msal_cache.serialize())
+            f.write(cache.serialize())
 
 
 def _get_token():
     """Get a valid access token using cached refresh token from az CLI."""
-    accounts = _msal_app.get_accounts()
-    # Prefer microsoft.com account
+    app = _get_msal_app()
+    accounts = app.get_accounts()
     msft = [a for a in accounts if "microsoft.com" in a.get("username", "")]
     account = msft[0] if msft else (accounts[0] if accounts else None)
     if account:
-        result = _msal_app.acquire_token_silent(_SCOPES, account=account, force_refresh=False)
+        result = app.acquire_token_silent(_SCOPES, account=account, force_refresh=False)
         if result and "access_token" in result:
             _save_cache()
             return result["access_token"]
