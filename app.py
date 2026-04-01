@@ -27,8 +27,8 @@ app = Flask(__name__)
 # ── OpenTelemetry ────────────────────────────────────────────────────────────
 
 OTEL_ENDPOINT = os.environ.get(
-    "OTEL_EXPORTER_OTLP_ENDPOINT", "https://production-otlp-2fa05823.app.embr.azure"
-)
+    "OTEL_EXPORTER_OTLP_ENDPOINT") or "https://production-otlp-2fa05823.app.embr.azure"
+PROM_METRICS_ENDPOINT = "https://production-prometheus-embr-1a780423.app.embr.azure/api/v1/otlp/v1/metrics"
 
 _tracer = None
 _meter = None
@@ -54,7 +54,7 @@ except ImportError:
 
 if _otel_available and OTEL_ENDPOINT:
     try:
-        resource = Resource.create({"service.name": "home-finder", "service.version": "1.0.0"})
+        resource = Resource.create({"service.name": "refi-wizard-agent", "service.version": "1.0.0"})
 
         # Traces
         trace_provider = TracerProvider(resource=resource)
@@ -64,9 +64,9 @@ if _otel_available and OTEL_ENDPOINT:
         trace.set_tracer_provider(trace_provider)
         _tracer = trace.get_tracer("home-finder")
 
-        # Metrics
+        # Metrics → Prometheus via OTLP
         metric_reader = PeriodicExportingMetricReader(
-            OTLPMetricExporter(endpoint=f"{OTEL_ENDPOINT}/v1/metrics"),
+            OTLPMetricExporter(endpoint=PROM_METRICS_ENDPOINT),
             export_interval_millis=15000,
         )
         metric_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
