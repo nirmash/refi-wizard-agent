@@ -1,0 +1,226 @@
+{
+  "panels": [
+    {
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 15
+          },
+          "unit": "s"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "rate(sandbox_cpu_usage_seconds_total[5m])",
+          "legendFormat": "CPU cores"
+        }
+      ],
+      "title": "CPU Usage",
+      "type": "timeseries"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 15
+          },
+          "unit": "bytes"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 2,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "sandbox_memory_usage_bytes",
+          "legendFormat": "Memory"
+        }
+      ],
+      "title": "Memory Usage",
+      "type": "timeseries"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 15
+          },
+          "unit": "Bps"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "id": 3,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "rate(sandbox_network_rx_bytes_total[5m])",
+          "legendFormat": "RX bytes/s"
+        }
+      ],
+      "title": "Network RX (Received)",
+      "type": "timeseries"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "fillOpacity": 15
+          },
+          "unit": "Bps"
+        }
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "id": 4,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "rate(sandbox_network_tx_bytes_total[5m])",
+          "legendFormat": "TX bytes/s"
+        }
+      ],
+      "title": "Network TX (Sent)",
+      "type": "timeseries"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 3,
+          "unit": "short"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 0,
+        "y": 16
+      },
+      "id": 5,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "rate(sandbox_cpu_usage_seconds_total[1m])"
+        }
+      ],
+      "title": "Current CPU (cores)",
+      "type": "stat"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 6,
+        "y": 16
+      },
+      "id": 6,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "sandbox_memory_usage_bytes"
+        }
+      ],
+      "title": "Current Memory",
+      "type": "stat"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 12,
+        "y": 16
+      },
+      "id": 7,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "sandbox_network_rx_bytes_total"
+        }
+      ],
+      "title": "Network In (total)",
+      "type": "stat"
+    },
+    {
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        }
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 6,
+        "x": 18,
+        "y": 16
+      },
+      "id": 8,
+      "targets": [
+        {
+          "datasource": {
+            "uid": "PBFA97CFB590B2093"
+          },
+          "expr": "sandbox_network_tx_bytes_total"
+        }
+      ],
+      "title": "Network Out (total)",
+      "type": "stat"
+    }
+  ],
+  "refresh": "30s",
+  "tags": [
+    "platform",
+    "embr",
+    "home-finder"
+  ],
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timezone": "browser",
+  "title": "Home Finder \u2014 Platform Metrics",
+  "uid": "home-finder-platform"
+}
