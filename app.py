@@ -89,7 +89,7 @@ ENDPOINT = os.environ.get(
     "AZURE_AI_ENDPOINT",
     "https://ai-nimashkowski7010ai130812469137.services.ai.azure.com/api/projects/ai-nimashkowski-agent-test",
 )
-API_KEY = os.environ.get("AZURE_AI_API_KEY", "")
+API_KEY = os.environ.get("AZURE_AI_API_KEY", "EgsUnoGDlo559BTgvPPTq1fLdzmaR7O5A1qK0C5T4GERuSDO2y4OJQQJ99ALACHYHv6XJ3w3AAAAACOGEymi")
 AGENT_NAME = os.environ.get("AGENT_NAME", "refi-wizard")
 AGENT_VERSION = os.environ.get("AGENT_VERSION", "5")
 DATABASE_URL = os.environ.get("DATABASE_URL", "")
