@@ -27,7 +27,7 @@ app = Flask(__name__)
 # ── OpenTelemetry ────────────────────────────────────────────────────────────
 
 OTEL_ENDPOINT = os.environ.get(
-    "OTEL_EXPORTER_OTLP_ENDPOINT") or "https://production-otlp-2fa05823.app.embr.azure"
+    "OTEL_EXPORTER_OTLP_ENDPOINT") or "https://production-otlp-00229c32.app.embr.azure"
 PROM_METRICS_ENDPOINT = "https://production-prometheus-embr-1a780423.app.embr.azure/api/v1/otlp/v1/metrics"
 
 _tracer = None
