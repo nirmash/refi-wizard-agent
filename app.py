@@ -54,7 +54,7 @@ except ImportError:
 
 if _otel_available and OTEL_ENDPOINT:
     try:
-        resource = Resource.create({"service.name": "home-finder", "service.version": "1.0.0"})
+        resource = Resource.create({"service.name": "refi-wizard-agent", "service.version": "1.0.0"})
 
         # Traces
         trace_provider = TracerProvider(resource=resource)
@@ -62,7 +62,7 @@ if _otel_available and OTEL_ENDPOINT:
             BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{OTEL_ENDPOINT}/v1/traces"))
         )
         trace.set_tracer_provider(trace_provider)
-        _tracer = trace.get_tracer("home-finder")
+        _tracer = trace.get_tracer("refi-wizard-agent")
 
         # Metrics → Prometheus via OTLP
         metric_reader = PeriodicExportingMetricReader(
@@ -71,7 +71,7 @@ if _otel_available and OTEL_ENDPOINT:
         )
         metric_provider = MeterProvider(resource=resource, metric_readers=[metric_reader])
         metrics.set_meter_provider(metric_provider)
-        _meter = metrics.get_meter("home-finder")
+        _meter = metrics.get_meter("refi-wizard-agent")
 
         _chat_counter = _meter.create_counter("chat.requests", description="Number of chat requests")
         _chat_latency = _meter.create_histogram("chat.latency_ms", description="Chat response latency in ms")
