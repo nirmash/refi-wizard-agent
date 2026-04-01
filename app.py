@@ -54,7 +54,7 @@ except ImportError:
 
 if _otel_available and OTEL_ENDPOINT:
     try:
-        resource = Resource.create({"service.name": "refi-wizard-agent", "service.version": "1.0.0"})
+        resource = Resource.create({"service.name": "home-finder", "service.version": "1.0.0"})
 
         # Traces
         trace_provider = TracerProvider(resource=resource)
@@ -201,6 +201,7 @@ def _get_openai_client():
         api_key="placeholder",
         base_url=ENDPOINT.rstrip("/") + "/openai/v1/",
         default_headers={"api-key": API_KEY},
+        timeout=55.0,
     )
 
 
@@ -235,9 +236,7 @@ def chat():
     if not user_message:
         return jsonify({"error": "Message is required"}), 400
 
-    messages = []
     home = None
-
     if home_id:
         home = _fetch_home(home_id)
         if home:
@@ -250,22 +249,11 @@ def chat():
             )
             user_message = context + user_message
 
-    messages.append({"role": "user", "content": user_message})
+    messages = [{"role": "user", "content": user_message}]
 
-    span_ctx = _tracer.start_as_current_span("agent_chat") if _tracer else None
-    try:
-        if span_ctx:
-            span_ctx.__enter__()
-            span = trace.get_current_span()
-            span.set_attribute("agent.name", AGENT_NAME)
-            span.set_attribute("agent.version", AGENT_VERSION)
-            if home:
-                span.set_attribute("home.id", home["id"])
-                span.set_attribute("home.price", home["price"])
-                span.set_attribute("home.city", home["city"])
-
+    def _do_chat():
         openai_client = _get_openai_client()
-        response = openai_client.responses.create(
+        return openai_client.responses.create(
             input=messages,
             extra_body={
                 "agent_reference": {
@@ -276,15 +264,27 @@ def chat():
             },
         )
 
+    try:
+        if _tracer:
+            with _tracer.start_as_current_span("agent_chat") as span:
+                span.set_attribute("agent.name", AGENT_NAME)
+                span.set_attribute("agent.version", AGENT_VERSION)
+                if home:
+                    span.set_attribute("home.id", home["id"])
+                    span.set_attribute("home.price", home["price"])
+                    span.set_attribute("home.city", home["city"])
+                response = _do_chat()
+                latency_ms = (time.time() - start) * 1000
+                span.set_attribute("chat.latency_ms", latency_ms)
+                span.set_attribute("chat.response_length", len(response.output_text))
+        else:
+            response = _do_chat()
+            latency_ms = (time.time() - start) * 1000
+
         if _chat_counter:
             _chat_counter.add(1, {"status": "success"})
-        latency_ms = (time.time() - start) * 1000
         if _chat_latency:
             _chat_latency.record(latency_ms)
-        if span_ctx:
-            span = trace.get_current_span()
-            span.set_attribute("chat.latency_ms", latency_ms)
-            span.set_attribute("chat.response_length", len(response.output_text))
 
         return jsonify({"response": response.output_text})
     except Exception as exc:
@@ -292,9 +292,6 @@ def chat():
             _chat_counter.add(1, {"status": "error"})
         logger.exception("Chat request failed")
         return jsonify({"error": str(exc)}), 500
-    finally:
-        if span_ctx:
-            span_ctx.__exit__(None, None, None)
 
 
 if __name__ == "__main__":
