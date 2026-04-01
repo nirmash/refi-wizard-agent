@@ -30,6 +30,8 @@ app = Flask(__name__)
 
 OTEL_ENDPOINT = os.environ.get(
     "OTEL_EXPORTER_OTLP_ENDPOINT") or "https://production-otlp-00229c32.app.embr.azure"
+TEMPO_ENDPOINT = os.environ.get(
+    "TEMPO_ENDPOINT") or "https://production-tempo-embr-d93938c0.app.embr.azure"
 PROM_METRICS_ENDPOINT = "https://production-prometheus-embr-1a780423.app.embr.azure/api/v1/otlp/v1/metrics"
 
 _tracer = None
@@ -62,10 +64,10 @@ if _otel_available and OTEL_ENDPOINT:
     try:
         resource = Resource.create({"service.name": "home-finder", "service.version": "1.0.0"})
 
-        # Traces
+        # Traces → Tempo
         trace_provider = TracerProvider(resource=resource)
         trace_provider.add_span_processor(
-            BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{OTEL_ENDPOINT}/v1/traces"))
+            BatchSpanProcessor(OTLPSpanExporter(endpoint=f"{TEMPO_ENDPOINT}/v1/traces"))
         )
         trace.set_tracer_provider(trace_provider)
         _tracer = trace.get_tracer("home-finder")
