@@ -296,6 +296,22 @@
                 "value": true
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_message"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Error Message"
+              },
+              {
+                "id": "custom.width",
+                "value": 400
+              }
+            ]
           }
         ]
       },

@@ -252,8 +252,13 @@ def _fetch_home(home_id):
 
 def _record_error(exc, context=""):
     """Record an error in OTEL: span exception, error counter, and log."""
+    msg = str(exc)[:120]  # truncate for label safety
     if _app_errors:
-        _app_errors.add(1, {"error.type": type(exc).__name__, "error.context": context})
+        _app_errors.add(1, {
+            "error.type": type(exc).__name__,
+            "error.context": context,
+            "error.message": msg,
+        })
     if _tracer:
         span = trace.get_current_span()
         if span and span.is_recording():

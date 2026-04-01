@@ -530,7 +530,7 @@
         }
       ],
       "timeFrom": "6h",
-      "timeShift": "6h",
+      "timeShift": "0h",
       "title": "Home Selections by City",
       "transformations": [
         {
