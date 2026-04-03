@@ -28,8 +28,11 @@ app = Flask(__name__)
 
 # ── OpenTelemetry ────────────────────────────────────────────────────────────
 
-OTEL_ENDPOINT = os.environ.get(
-    "OTEL_EXPORTER_OTLP_ENDPOINT") or "https://production-otlp-00229c32.app.embr.azure"
+# Embr sets OTEL_EXPORTER_OTLP_ENDPOINT to localhost:4317 — clear it so we control endpoints
+os.environ.pop("OTEL_EXPORTER_OTLP_ENDPOINT", None)
+os.environ.pop("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", None)
+
+OTEL_ENDPOINT = "https://production-otlp-00229c32.app.embr.azure"
 PROM_METRICS_ENDPOINT = "https://production-prometheus-embr-1a780423.app.embr.azure/api/v1/otlp/v1/metrics"
 
 _tracer = None
@@ -63,8 +66,6 @@ if _otel_available and OTEL_ENDPOINT:
         resource = Resource.create({"service.name": "home-finder", "service.version": "1.0.0"})
 
         # Traces → OTLP collector
-        os.environ.pop("OTEL_EXPORTER_OTLP_ENDPOINT", None)
-        os.environ.pop("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", None)
         _traces_url = f"{OTEL_ENDPOINT}/v1/traces"
         trace_provider = TracerProvider(resource=resource)
         trace_provider.add_span_processor(
